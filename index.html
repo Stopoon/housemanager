@@ -1029,9 +1029,7 @@
     <div class="app-logo"><span>외도민</span> 매니저</div>
     <div style="font-size:11px; color:var(--text3); font-weight:500;">HOST MANAGER</div>
   </div>
-  <div class="property-tabs" id="propertyTabs" style="display:none">
-    <button class="prop-tab active" data-all onclick="selectProperty('all', this)">전체</button>
-  </div>
+
 </div>
 
 <!-- ══════════ 홈 화면 ══════════ -->
@@ -1064,7 +1062,7 @@
   </div>
 
   <!-- 사업장 카드 목록 숨김 -->
-  <div id="propertyCardList" style="display:none"></div>
+  <div id="propertyCardList" style="padding: 0 16px 16px"></div>
 
 </div>
 
@@ -1521,8 +1519,7 @@ window.switchTab = function(tab, btn) {
   document.getElementById('screen-' + tab).classList.add('active');
   btn.classList.add('active');
   // 상단 사업장 탭은 홈에서만 표시
-  const propTabs = document.getElementById('propertyTabs');
-  if (propTabs) propTabs.style.display = tab === 'home' ? 'flex' : 'none';
+
   if (tab === 'stats') {
     fillStatsPropertySelect().then(() => loadStats());
   }
@@ -1536,9 +1533,6 @@ window.switchTab = function(tab, btn) {
 
 // ── 앱 초기화 ──
 async function init() {
-  // 처음엔 홈 탭이므로 propertyTabs 표시
-  const propTabs = document.getElementById('propertyTabs');
-  if (propTabs) propTabs.style.display = 'flex';
   await loadProperties();
 }
 
@@ -2136,7 +2130,7 @@ async function loadMonthData() {
     snap.forEach(d => {
       if(d.id.startsWith(prefix)) {
         const data = d.data();
-        const dateStr = d.id.split('_')[1]; // YYYYMMDD
+        const lastUnder = d.id.lastIndexOf('_'); const dateStr = d.id.substring(lastUnder + 1); // YYYYMMDD
         if((data.revenues && data.revenues.length > 0) || (data.expenses && data.expenses.length > 0)) {
           window.manageState.revenueDates.add(dateStr);
         }
