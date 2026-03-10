@@ -63,7 +63,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 0;
   }
 
   .app-logo {
@@ -1029,7 +1029,7 @@
     <div class="app-logo"><span>외도민</span> 매니저</div>
     <div style="font-size:11px; color:var(--text3); font-weight:500;">HOST MANAGER</div>
   </div>
-  <div class="property-tabs" id="propertyTabs">
+  <div class="property-tabs" id="propertyTabs" style="display:none">
     <button class="prop-tab active" data-all onclick="selectProperty('all', this)">전체</button>
   </div>
 </div>
@@ -1063,14 +1063,8 @@
     </div>
   </div>
 
-  <!-- 사업장 카드 목록 -->
-  <div class="section-title">사업장 현황</div>
-  <div id="propertyCardList">
-    <div class="empty-state">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      <p>등록된 사업장이 없어요<br><span style="font-size:12px">등록 탭에서 사업장을 추가해주세요</span></p>
-    </div>
-  </div>
+  <!-- 사업장 카드 목록 숨김 -->
+  <div id="propertyCardList" style="display:none"></div>
 
 </div>
 
@@ -1555,9 +1549,8 @@ async function loadProperties() {
     const props = [];
     snap.forEach(d => props.push({ id: d.id, ...d.data() }));
     renderPropertyTabs(props);
-    renderHomeCards(props);
     renderRegisteredList(props);
-    updateHomeSummary(props);
+    await updateHomeSummary(props); // 내부에서 dailyRecords 읽고 renderHomeCards 호출
     return props;
   } catch(e) {
     console.error('❌ loadProperties 에러:', e);
@@ -1602,15 +1595,63 @@ function renderPropertyTabs(props) {
 }
 
 // ── 홈 요약 업데이트 ──
-function updateHomeSummary(props) {
+async function updateHomeSummary(props) {
   const active = props.filter(p => p.status === 'active');
   document.getElementById('home-property-count').textContent = active.length + '곳';
-  // 수익/비용은 dailyRecords 로드 후 계산 (추후 구현)
+
+  // 이번달 기간 계산
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const thisMonthPrefix = `${y}${m}`;
+  const thisYear = String(y);
+
+  try {
+    const snap = await getDocs(collection(db, 'dailyRecords'));
+    // propId별로 집계
+    const stats = {}; // stats[propId] = { monthInc, monthExp, yearInc, yearExp, totalInc, totalExp }
+    active.forEach(p => {
+      stats[p.id] = { monthInc:0, monthExp:0, yearInc:0, yearExp:0, totalInc:0, totalExp:0 };
+    });
+
+    snap.forEach(d => {
+      const r = d.data();
+      if (!stats[r.propId]) return;
+      const s = stats[r.propId];
+      const dateStr = r.date || '';
+      const inc = (r.revenues||[]).reduce((a,rv) => a + (rv.amount||0), 0);
+      const exp = (r.expenses||[]).reduce((a,ex) => a + (ex.amount||0), 0);
+      // 누적
+      s.totalInc += inc; s.totalExp += exp;
+      // 연간
+      if (dateStr.startsWith(thisYear)) { s.yearInc += inc; s.yearExp += exp; }
+      // 이번달
+      if (dateStr.startsWith(thisMonthPrefix)) { s.monthInc += inc; s.monthExp += exp; }
+    });
+
+    // 전체 합산해서 홈 요약 카드 업데이트
+    let totalMonthInc = 0, totalMonthExp = 0;
+    active.forEach(p => {
+      const s = stats[p.id] || {};
+      totalMonthInc += s.monthInc || 0;
+      totalMonthExp += s.monthExp || 0;
+    });
+    const fmt = v => '₩' + v.toLocaleString();
+    document.getElementById('home-total-income').textContent = fmt(totalMonthInc);
+    document.getElementById('home-total-expense').textContent = fmt(totalMonthExp);
+    document.getElementById('home-total-profit').textContent = fmt(totalMonthInc - totalMonthExp);
+
+    // 사업장 카드 업데이트
+    renderHomeCards(props, stats);
+  } catch(e) {
+    renderHomeCards(props, {});
+  }
 }
 
 // ── 홈 카드 렌더링 ──
-function renderHomeCards(props) {
+function renderHomeCards(props, stats) {
   const container = document.getElementById('propertyCardList');
+  if (!container) return;
   const active = props.filter(p => p.status === 'active');
 
   if(active.length === 0) {
@@ -1622,45 +1663,37 @@ function renderHomeCards(props) {
     return;
   }
 
-  container.innerHTML = active.map(p => `
-    <div class="property-card" onclick="showPropertyDetail('${p.id}')">
+  const fmt = v => '₩' + (v||0).toLocaleString();
+  container.innerHTML = active.map(p => {
+    const s = (stats && stats[p.id]) || {};
+    return `
+    <div class="property-card">
       <div class="property-card-header">
         <div class="property-name">${p.name}</div>
         <div class="status-badge status-active">운영중</div>
       </div>
-      <div class="property-stats">
-        <div class="property-stat-item">
-          <div class="property-stat-label">이번달 숙박률</div>
-          <div class="property-stat-value">--%</div>
-        </div>
-        <div class="property-stat-item">
-          <div class="property-stat-label">연간 숙박률</div>
-          <div class="property-stat-value">--%</div>
-        </div>
-        <div class="property-stat-item">
-          <div class="property-stat-label">누적 숙박률</div>
-          <div class="property-stat-value">--%</div>
-        </div>
-      </div>
       <div class="property-finance">
         <div class="finance-row">
           <div class="finance-period">이번달</div>
-          <div class="finance-item"><span class="finance-key">수익</span><span class="finance-val inc">₩0</span></div>
-          <div class="finance-item"><span class="finance-key">비용</span><span class="finance-val exp">₩0</span></div>
+          <div class="finance-item"><span class="finance-key">수익</span><span class="finance-val inc">${fmt(s.monthInc)}</span></div>
+          <div class="finance-item"><span class="finance-key">비용</span><span class="finance-val exp">${fmt(s.monthExp)}</span></div>
+          <div class="finance-item"><span class="finance-key">순이익</span><span class="finance-val" style="color:var(--green)">${fmt((s.monthInc||0)-(s.monthExp||0))}</span></div>
         </div>
         <div class="finance-row">
           <div class="finance-period">연간</div>
-          <div class="finance-item"><span class="finance-key">수익</span><span class="finance-val inc">₩0</span></div>
-          <div class="finance-item"><span class="finance-key">비용</span><span class="finance-val exp">₩0</span></div>
+          <div class="finance-item"><span class="finance-key">수익</span><span class="finance-val inc">${fmt(s.yearInc)}</span></div>
+          <div class="finance-item"><span class="finance-key">비용</span><span class="finance-val exp">${fmt(s.yearExp)}</span></div>
+          <div class="finance-item"><span class="finance-key">순이익</span><span class="finance-val" style="color:var(--green)">${fmt((s.yearInc||0)-(s.yearExp||0))}</span></div>
         </div>
         <div class="finance-row">
           <div class="finance-period">누적</div>
-          <div class="finance-item"><span class="finance-key">수익</span><span class="finance-val inc">₩0</span></div>
-          <div class="finance-item"><span class="finance-key">비용</span><span class="finance-val exp">₩0</span></div>
+          <div class="finance-item"><span class="finance-key">수익</span><span class="finance-val inc">${fmt(s.totalInc)}</span></div>
+          <div class="finance-item"><span class="finance-key">비용</span><span class="finance-val exp">${fmt(s.totalExp)}</span></div>
+          <div class="finance-item"><span class="finance-key">순이익</span><span class="finance-val" style="color:var(--green)">${fmt((s.totalInc||0)-(s.totalExp||0))}</span></div>
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 // ── 등록 목록 렌더링 ──
@@ -2104,7 +2137,7 @@ async function loadMonthData() {
       if(d.id.startsWith(prefix)) {
         const data = d.data();
         const dateStr = d.id.split('_')[1]; // YYYYMMDD
-        if(data.revenues && data.revenues.length > 0) {
+        if((data.revenues && data.revenues.length > 0) || (data.expenses && data.expenses.length > 0)) {
           window.manageState.revenueDates.add(dateStr);
         }
       }
