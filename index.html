@@ -1029,6 +1029,9 @@
     <div class="app-logo"><span>외도민</span> 매니저</div>
     <div style="font-size:11px; color:var(--text3); font-weight:500;">HOST MANAGER</div>
   </div>
+  <div class="property-tabs" id="propertyTabs">
+    <button class="prop-tab active" data-all onclick="selectProperty('all', this)">전체</button>
+  </div>
 </div>
 
 <!-- ══════════ 홈 화면 ══════════ -->
@@ -1536,22 +1539,28 @@ window.switchTab = function(tab, btn) {
 
 // ── 앱 초기화 ──
 async function init() {
+  // 처음엔 홈 탭이므로 propertyTabs 표시
+  const propTabs = document.getElementById('propertyTabs');
+  if (propTabs) propTabs.style.display = 'flex';
   await loadProperties();
 }
 
 // ── 사업장 불러오기 ──
 async function loadProperties() {
   try {
+    console.log('🔥 Firebase 연결 시도...');
     const snap = await getDocs(collection(db, 'properties'));
     const props = [];
     snap.forEach(d => props.push({ id: d.id, ...d.data() }));
+    console.log('✅ 불러온 사업장 수:', props.length, props);
     renderPropertyTabs(props);
     renderHomeCards(props);
     renderRegisteredList(props);
     updateHomeSummary(props);
     return props;
   } catch(e) {
-    console.error(e);
+    console.error('❌ loadProperties 에러:', e);
+    showToast('❌ 데이터 로드 실패: ' + e.message);
     return [];
   }
 }
@@ -1559,6 +1568,7 @@ async function loadProperties() {
 // ── 상단 탭 렌더링 ──
 function renderPropertyTabs(props) {
   const container = document.getElementById('propertyTabs');
+  if (!container) return; // 홈 탭이 아닐 때 숨겨져 있으면 스킵
   const active = props.filter(p => p.status === 'active');
 
   // 기존 탭 제거 (전체 빼고)
