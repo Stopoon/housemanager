@@ -843,6 +843,88 @@
   .amount-row.total { border-top: 1px solid var(--border); padding-top: 8px; margin-top: 6px; }
   .amount-row.total .value { font-size: 16px; color: var(--green); }
 
+  /* ── 달력 날짜 셀 ── */
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    padding: 2px;
+    gap: 2px;
+  }
+
+  .cal-day:hover:not(.cal-empty) { background: var(--card2); }
+
+  .cal-day.cal-empty { cursor: default; }
+
+  .cal-day.cal-today .cal-num {
+    background: var(--silver);
+    color: #000;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cal-day.cal-selected { background: var(--card2); border: 1px solid var(--silver); }
+
+  .cal-day.cal-sunday .cal-num { color: var(--red); }
+  .cal-day.cal-saturday .cal-num { color: var(--blue); }
+
+  .cal-num {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .cal-dot-row {
+    display: flex;
+    gap: 2px;
+    justify-content: center;
+    min-height: 6px;
+  }
+
+  .cal-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot-ical { background: #4fc3f7; }
+  .dot-revenue { background: #81c784; }
+  .dot-both { background: #c8a84b; }
+
+  /* ── 국적 버튼 ── */
+  .nationality-btn {
+    padding: 8px 4px;
+    background: var(--card2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius2);
+    color: var(--text2);
+    font-size: 11px;
+    font-family: 'Pretendard', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .nationality-btn.active {
+    background: rgba(200,200,200,0.15);
+    border-color: var(--silver);
+    color: var(--silver2);
+    font-weight: 600;
+  }
+
   /* ── 입력 항목 행 (수익/비용) ── */
   .entry-row {
     background: var(--card2);
@@ -1056,10 +1138,137 @@
 
 <!-- ══════════ 관리 화면 ══════════ -->
 <div class="screen" id="screen-manage">
-  <div class="empty-state" style="padding:60px 20px">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-    <p>관리 탭은 다음 단계에서 완성돼요 🔨</p>
+
+  <!-- 사업장 선택 -->
+  <div class="form-group">
+    <label class="form-label">사업장 선택</label>
+    <select class="form-input" id="managePropertySelect" onchange="onManagePropertyChange()">
+      <option value="">-- 사업장을 선택해주세요 --</option>
+    </select>
   </div>
+
+  <!-- 달력 -->
+  <div class="card" id="manageCalendarCard" style="display:none">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      날짜 선택
+    </div>
+
+    <!-- 달력 헤더 -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+      <button onclick="changeMonth(-1)" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;padding:4px 8px">‹</button>
+      <div style="font-size:15px;font-weight:700;color:var(--silver2)" id="calMonthTitle"></div>
+      <button onclick="changeMonth(1)" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;padding:4px 8px">›</button>
+    </div>
+
+    <!-- 요일 헤더 -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">
+      <div style="text-align:center;font-size:10px;color:var(--red);font-weight:600;padding:4px">일</div>
+      <div style="text-align:center;font-size:10px;color:var(--text3);font-weight:600;padding:4px">월</div>
+      <div style="text-align:center;font-size:10px;color:var(--text3);font-weight:600;padding:4px">화</div>
+      <div style="text-align:center;font-size:10px;color:var(--text3);font-weight:600;padding:4px">수</div>
+      <div style="text-align:center;font-size:10px;color:var(--text3);font-weight:600;padding:4px">목</div>
+      <div style="text-align:center;font-size:10px;color:var(--text3);font-weight:600;padding:4px">금</div>
+      <div style="text-align:center;font-size:10px;color:var(--blue);font-weight:600;padding:4px">토</div>
+    </div>
+
+    <!-- 달력 날짜 그리드 -->
+    <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
+
+    <!-- 달력 범례 -->
+    <div style="display:flex;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text3)">
+        <div style="width:8px;height:8px;border-radius:50%;background:#4fc3f7"></div>iCal 예약
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text3)">
+        <div style="width:8px;height:8px;border-radius:50%;background:#81c784"></div>수익 입력
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text3)">
+        <div style="width:8px;height:8px;border-radius:50%;background:#c8a84b"></div>둘 다
+      </div>
+    </div>
+  </div>
+
+  <!-- 선택된 날짜 입력 패널 -->
+  <div id="manageDayPanel" style="display:none">
+
+    <!-- 날짜 타이틀 -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:16px;font-weight:700;color:var(--silver2)" id="selectedDateTitle"></div>
+      <div style="font-size:11px;color:var(--text3)" id="selectedDateSub"></div>
+    </div>
+
+    <!-- 투숙 국적 -->
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        투숙 국적
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px" id="nationalityBtns">
+        <button class="nationality-btn" data-val="내국인" onclick="selectNationality(this)">🇰🇷 내국인</button>
+        <button class="nationality-btn" data-val="중국인" onclick="selectNationality(this)">🇨🇳 중국인</button>
+        <button class="nationality-btn" data-val="일본인" onclick="selectNationality(this)">🇯🇵 일본인</button>
+        <button class="nationality-btn" data-val="기타" onclick="selectNationality(this)">🌍 기타</button>
+      </div>
+    </div>
+
+    <!-- 특이사항 -->
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+        특이사항
+      </div>
+      <textarea class="form-input" id="manageNote" placeholder="특이사항을 입력해주세요..." style="min-height:60px"></textarea>
+    </div>
+
+    <!-- 수익 입력 -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:8px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        수익
+      </div>
+      <div id="revenueList"></div>
+      <button class="btn-add" onclick="addRevenueRow()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        수익 추가
+      </button>
+    </div>
+
+    <!-- 비용 입력 -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:8px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
+        비용
+      </div>
+      <div id="expenseList"></div>
+      <button class="btn-add" onclick="addExpenseRow()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        비용 추가
+      </button>
+    </div>
+
+    <!-- 일별 요약 -->
+    <div class="amount-summary">
+      <div class="amount-row">
+        <span class="label">수익 합계</span>
+        <span class="value income" id="dayTotalIncome">₩0</span>
+      </div>
+      <div class="amount-row">
+        <span class="label">비용 합계</span>
+        <span class="value expense" id="dayTotalExpense">₩0</span>
+      </div>
+      <div class="amount-row total">
+        <span class="label" style="font-weight:700">순이익</span>
+        <span class="value profit" id="dayTotalProfit">₩0</span>
+      </div>
+    </div>
+
+    <div style="margin-top:12px">
+      <button class="btn btn-primary" onclick="saveDayRecord()">💾 저장</button>
+    </div>
+
+  </div>
+
 </div>
 
 <!-- ══════════ 통계 화면 ══════════ -->
@@ -1632,8 +1841,344 @@ function showToast(msg) {
 
 window.showToast = showToast;
 
+// ── 관리탭 상태 ──
+window.manageState = {
+  propId: null,
+  year: new Date().getFullYear(),
+  month: new Date().getMonth(),
+  selectedDate: null,
+  nationality: null,
+  icalDates: new Set(),
+  revenueDates: new Set(),
+};
+
+// ── 관리탭 사업장 선택 드롭다운 채우기 ──
+async function fillManagePropertySelect() {
+  const sel = document.getElementById('managePropertySelect');
+  const snap = await getDocs(collection(db, 'properties'));
+  sel.innerHTML = '<option value="">-- 사업장을 선택해주세요 --</option>';
+  snap.forEach(d => {
+    const p = d.data();
+    if(p.status === 'active') {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = p.name;
+      sel.appendChild(opt);
+    }
+  });
+}
+
+window.onManagePropertyChange = async function() {
+  const id = document.getElementById('managePropertySelect').value;
+  if(!id) {
+    document.getElementById('manageCalendarCard').style.display = 'none';
+    document.getElementById('manageDayPanel').style.display = 'none';
+    return;
+  }
+  window.manageState.propId = id;
+  window.manageState.selectedDate = null;
+  document.getElementById('manageDayPanel').style.display = 'none';
+  document.getElementById('manageCalendarCard').style.display = 'block';
+  await loadMonthData();
+  renderCalendar();
+};
+
+// ── 월 데이터 로드 (수익 입력된 날 + iCal) ──
+async function loadMonthData() {
+  const { propId, year, month } = window.manageState;
+  window.manageState.revenueDates = new Set();
+  window.manageState.icalDates = new Set();
+
+  // 수익 입력된 날 조회
+  try {
+    const prefix = `${propId}_${year}${String(month+1).padStart(2,'0')}`;
+    const snap = await getDocs(collection(db, 'dailyRecords'));
+    snap.forEach(d => {
+      if(d.id.startsWith(prefix)) {
+        const data = d.data();
+        const dateStr = d.id.split('_')[1]; // YYYYMMDD
+        if(data.revenues && data.revenues.length > 0) {
+          window.manageState.revenueDates.add(dateStr);
+        }
+      }
+    });
+  } catch(e) {}
+}
+
+// ── 달력 렌더링 ──
+function renderCalendar() {
+  const { year, month, selectedDate, icalDates, revenueDates } = window.manageState;
+  const today = new Date();
+
+  // 헤더
+  const monthNames = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('calMonthTitle').textContent = `${year}년 ${monthNames[month]}`;
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  const firstDay = new Date(year, month, 1).getDay(); // 0=일
+  const lastDate = new Date(year, month+1, 0).getDate();
+
+  // 빈 칸
+  for(let i = 0; i < firstDay; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'cal-day cal-empty';
+    grid.appendChild(empty);
+  }
+
+  // 날짜
+  for(let d = 1; d <= lastDate; d++) {
+    const dateStr = `${year}${String(month+1).padStart(2,'0')}${String(d).padStart(2,'0')}`;
+    const dayOfWeek = new Date(year, month, d).getDay();
+    const isToday = today.getFullYear()===year && today.getMonth()===month && today.getDate()===d;
+    const isSelected = selectedDate === dateStr;
+
+    const hasIcal = icalDates.has(dateStr);
+    const hasRevenue = revenueDates.has(dateStr);
+
+    let dotHtml = '';
+    if(hasIcal && hasRevenue) dotHtml = '<div class="cal-dot dot-both"></div>';
+    else if(hasIcal) dotHtml = '<div class="cal-dot dot-ical"></div>';
+    else if(hasRevenue) dotHtml = '<div class="cal-dot dot-revenue"></div>';
+
+    const div = document.createElement('div');
+    div.className = `cal-day${isToday ? ' cal-today' : ''}${isSelected ? ' cal-selected' : ''}${dayOfWeek===0 ? ' cal-sunday' : ''}${dayOfWeek===6 ? ' cal-saturday' : ''}`;
+    div.innerHTML = `<div class="cal-num">${d}</div><div class="cal-dot-row">${dotHtml}</div>`;
+    div.onclick = () => selectDate(dateStr, d);
+    grid.appendChild(div);
+  }
+}
+
+window.changeMonth = async function(dir) {
+  let { year, month } = window.manageState;
+  month += dir;
+  if(month < 0) { month = 11; year--; }
+  if(month > 11) { month = 0; year++; }
+  window.manageState.year = year;
+  window.manageState.month = month;
+  await loadMonthData();
+  renderCalendar();
+};
+
+// ── 날짜 선택 ──
+async function selectDate(dateStr, d) {
+  window.manageState.selectedDate = dateStr;
+  renderCalendar();
+
+  const { year, month } = window.manageState;
+  const monthNames = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const dayNames = ['일','월','화','수','목','금','토'];
+  const dayOfWeek = new Date(year, month, d).getDay();
+
+  document.getElementById('selectedDateTitle').textContent = `${year}년 ${monthNames[month]} ${d}일`;
+  document.getElementById('selectedDateSub').textContent = dayNames[dayOfWeek] + '요일';
+  document.getElementById('manageDayPanel').style.display = 'block';
+
+  // 기존 데이터 로드
+  await loadDayRecord(dateStr);
+  document.getElementById('manageDayPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── 일별 데이터 로드 ──
+async function loadDayRecord(dateStr) {
+  const { propId } = window.manageState;
+  const docId = `${propId}_${dateStr}`;
+
+  // 초기화
+  window.manageState.nationality = null;
+  document.querySelectorAll('.nationality-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('manageNote').value = '';
+  document.getElementById('revenueList').innerHTML = '';
+  document.getElementById('expenseList').innerHTML = '';
+  updateDaySummary();
+
+  try {
+    const snap = await getDoc(doc(db, 'dailyRecords', docId));
+    if(snap.exists()) {
+      const data = snap.data();
+      // 국적
+      if(data.nationality) {
+        window.manageState.nationality = data.nationality;
+        document.querySelectorAll('.nationality-btn').forEach(b => {
+          if(b.dataset.val === data.nationality) b.classList.add('active');
+        });
+      }
+      // 특이사항
+      document.getElementById('manageNote').value = data.note || '';
+      // 수익
+      (data.revenues || []).forEach(r => addRevenueRow(r));
+      // 비용
+      (data.expenses || []).forEach(e => addExpenseRow(e));
+      updateDaySummary();
+    }
+  } catch(e) {}
+}
+
+// ── 수익 행 추가 ──
+window.addRevenueRow = function(data = {}) {
+  const list = document.getElementById('revenueList');
+  const idx = list.children.length + 1;
+  const div = document.createElement('div');
+  div.className = 'entry-row';
+  div.innerHTML = `
+    <div class="entry-row-header">
+      <span class="entry-row-num">수익 ${idx}</span>
+      <button class="entry-delete" onclick="this.closest('.entry-row').remove(); renumberRows('revenueList','수익'); updateDaySummary()">✕</button>
+    </div>
+    <div class="form-group" style="margin-bottom:8px">
+      <label class="form-label">플랫폼</label>
+      <select class="form-input" style="padding:10px 12px; font-size:13px">
+        <option value="에어비앤비" ${data.platform==='에어비앤비'?'selected':''}>에어비앤비</option>
+        <option value="직거래" ${data.platform==='직거래'?'selected':''}>직거래</option>
+        <option value="야놀자" ${data.platform==='야놀자'?'selected':''}>야놀자</option>
+        <option value="숙박닷컴" ${data.platform==='숙박닷컴'?'selected':''}>숙박닷컴</option>
+        <option value="기타" ${data.platform==='기타'?'selected':''}>기타</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:8px">
+      <label class="form-label">금액</label>
+      <div class="form-input-group">
+        <input type="number" class="form-input" placeholder="0" value="${data.amount||''}" style="padding:10px 12px; font-size:13px" oninput="updateDaySummary()">
+        <span class="form-unit">원</span>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <label class="form-label">적요</label>
+      <input type="text" class="form-input" placeholder="예: 2박3일 일본인 커플" value="${data.memo||''}" style="padding:10px 12px; font-size:13px">
+    </div>
+  `;
+  list.appendChild(div);
+  updateDaySummary();
+};
+
+// ── 비용 행 추가 ──
+window.addExpenseRow = function(data = {}) {
+  const list = document.getElementById('expenseList');
+  const idx = list.children.length + 1;
+  const div = document.createElement('div');
+  div.className = 'entry-row';
+  div.innerHTML = `
+    <div class="entry-row-header">
+      <span class="entry-row-num">비용 ${idx}</span>
+      <button class="entry-delete" onclick="this.closest('.entry-row').remove(); renumberRows('expenseList','비용'); updateDaySummary()">✕</button>
+    </div>
+    <div class="form-group" style="margin-bottom:8px">
+      <label class="form-label">유형</label>
+      <select class="form-input" style="padding:10px 12px; font-size:13px" onchange="toggleExpenseCustom(this)">
+        <option value="청소비" ${data.type==='청소비'?'selected':''}>청소비</option>
+        <option value="소모품" ${data.type==='소모품'?'selected':''}>소모품 구매</option>
+        <option value="수선수리비" ${data.type==='수선수리비'?'selected':''}>수선/수리비</option>
+        <option value="관리비공과금" ${data.type==='관리비공과금'?'selected':''}>관리비/공과금</option>
+        <option value="플랫폼수수료" ${data.type==='플랫폼수수료'?'selected':''}>플랫폼 수수료</option>
+        <option value="광고비" ${data.type==='광고비'?'selected':''}>광고비</option>
+        <option value="직접입력" ${data.type==='직접입력'?'selected':''}>직접입력</option>
+      </select>
+    </div>
+    <div class="expense-custom-input" style="display:${data.type==='직접입력'?'block':'none'}; margin-bottom:8px">
+      <input type="text" class="form-input" placeholder="비용 유형 입력" value="${data.customType||''}" style="padding:10px 12px; font-size:13px">
+    </div>
+    <div class="form-group" style="margin-bottom:8px">
+      <label class="form-label">금액</label>
+      <div class="form-input-group">
+        <input type="number" class="form-input" placeholder="0" value="${data.amount||''}" style="padding:10px 12px; font-size:13px" oninput="updateDaySummary()">
+        <span class="form-unit">원</span>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <label class="form-label">적요</label>
+      <input type="text" class="form-input" placeholder="예: 정기 청소비" value="${data.memo||''}" style="padding:10px 12px; font-size:13px">
+    </div>
+  `;
+  list.appendChild(div);
+  updateDaySummary();
+};
+
+window.toggleExpenseCustom = function(sel) {
+  const customDiv = sel.closest('.entry-row').querySelector('.expense-custom-input');
+  customDiv.style.display = sel.value === '직접입력' ? 'block' : 'none';
+};
+
+window.renumberRows = function(listId, label) {
+  document.querySelectorAll(`#${listId} .entry-row-num`).forEach((el, i) => {
+    el.textContent = `${label} ${i+1}`;
+  });
+};
+
+// ── 일별 합계 업데이트 ──
+window.updateDaySummary = function() {
+  let totalIncome = 0, totalExpense = 0;
+  document.querySelectorAll('#revenueList .entry-row').forEach(row => {
+    totalIncome += parseInt(row.querySelector('input[type=number]')?.value) || 0;
+  });
+  document.querySelectorAll('#expenseList .entry-row').forEach(row => {
+    totalExpense += parseInt(row.querySelector('input[type=number]')?.value) || 0;
+  });
+  const profit = totalIncome - totalExpense;
+  document.getElementById('dayTotalIncome').textContent = '₩' + totalIncome.toLocaleString();
+  document.getElementById('dayTotalExpense').textContent = '₩' + totalExpense.toLocaleString();
+  document.getElementById('dayTotalProfit').textContent = '₩' + profit.toLocaleString();
+  document.getElementById('dayTotalProfit').className = `value ${profit >= 0 ? 'profit' : 'expense'}`;
+};
+
+// ── 국적 선택 ──
+window.selectNationality = function(btn) {
+  document.querySelectorAll('.nationality-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  window.manageState.nationality = btn.dataset.val;
+};
+
+// ── 일별 데이터 저장 ──
+window.saveDayRecord = async function() {
+  const { propId, selectedDate, nationality } = window.manageState;
+  if(!propId || !selectedDate) { showToast('⚠️ 사업장과 날짜를 선택해주세요'); return; }
+
+  // 수익 수집
+  const revenues = [];
+  document.querySelectorAll('#revenueList .entry-row').forEach(row => {
+    const platform = row.querySelector('select')?.value;
+    const amount = parseInt(row.querySelectorAll('input')[0]?.value) || 0;
+    const memo = row.querySelectorAll('input')[1]?.value || '';
+    if(amount > 0) revenues.push({ platform, amount, memo });
+  });
+
+  // 비용 수집
+  const expenses = [];
+  document.querySelectorAll('#expenseList .entry-row').forEach(row => {
+    const sel = row.querySelector('select');
+    let type = sel?.value;
+    if(type === '직접입력') {
+      type = row.querySelector('.expense-custom-input input')?.value || '기타';
+    }
+    const amount = parseInt(row.querySelectorAll('input[type=number]')[0]?.value) || 0;
+    const memo = row.querySelector('input[type=text]:last-of-type')?.value || '';
+    if(amount > 0) expenses.push({ type, amount, memo });
+  });
+
+  const data = {
+    propId,
+    date: selectedDate,
+    nationality: nationality || '',
+    note: document.getElementById('manageNote').value.trim(),
+    revenues,
+    expenses,
+    updatedAt: new Date().toISOString()
+  };
+
+  try {
+    const docId = `${propId}_${selectedDate}`;
+    await setDoc(doc(db, 'dailyRecords', docId), data);
+    showToast('✅ 저장됐어요!');
+    await loadMonthData();
+    renderCalendar();
+  } catch(e) {
+    showToast('❌ 저장 실패: ' + e.message);
+  }
+};
+
 // 앱 시작
 init();
+fillManagePropertySelect();
 </script>
 
 </body>
