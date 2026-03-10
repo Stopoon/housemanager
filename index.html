@@ -1526,6 +1526,9 @@ window.switchTab = function(tab, btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('screen-' + tab).classList.add('active');
   btn.classList.add('active');
+  // 상단 사업장 탭은 홈에서만 표시
+  const propTabs = document.getElementById('propertyTabs');
+  if (propTabs) propTabs.style.display = tab === 'home' ? 'flex' : 'none';
   if (tab === 'stats') {
     fillStatsPropertySelect().then(() => loadStats());
   }
@@ -1548,11 +1551,9 @@ async function init() {
 // ── 사업장 불러오기 ──
 async function loadProperties() {
   try {
-    console.log('🔥 Firebase 연결 시도...');
     const snap = await getDocs(collection(db, 'properties'));
     const props = [];
     snap.forEach(d => props.push({ id: d.id, ...d.data() }));
-    console.log('✅ 불러온 사업장 수:', props.length, props);
     renderPropertyTabs(props);
     renderHomeCards(props);
     renderRegisteredList(props);
@@ -1773,19 +1774,20 @@ window.loadPropertyForEdit = async function(id) {
 };
 
 window.cancelEdit = function() {
-  document.getElementById('editPropertyId').value = '';
-  document.getElementById('propName').value = '';
-  document.getElementById('propAddress').value = '';
-  document.getElementById('propDeposit').value = '';
-  document.getElementById('propRent').value = '';
-  document.getElementById('propIcal').value = '';
-  document.getElementById('propMemo').value = '';
-  document.getElementById('memoCount').textContent = '0';
-  document.getElementById('registerFormTitle').textContent = '신규 사업장 등록';
-  document.getElementById('savePropertyBtn').textContent = '💾 사업장 저장';
-  document.getElementById('editCancelBtn').style.display = 'none';
-  document.getElementById('interiorSection').style.display = 'none';
-  document.getElementById('checklistSection').style.display = 'none';
+  const safe = (id) => document.getElementById(id);
+  if(safe('editPropertyId')) safe('editPropertyId').value = '';
+  if(safe('propName')) safe('propName').value = '';
+  if(safe('propAddress')) safe('propAddress').value = '';
+  if(safe('propDeposit')) safe('propDeposit').value = '';
+  if(safe('propRent')) safe('propRent').value = '';
+  if(safe('propIcal')) safe('propIcal').value = '';
+  if(safe('propMemo')) safe('propMemo').value = '';
+  if(safe('memoCount')) safe('memoCount').textContent = '0';
+  if(safe('registerFormTitle')) safe('registerFormTitle').textContent = '신규 사업장 등록';
+  if(safe('savePropertyBtn')) safe('savePropertyBtn').textContent = '💾 사업장 저장';
+  if(safe('editCancelBtn')) safe('editCancelBtn').style.display = 'none';
+  if(safe('interiorSection')) safe('interiorSection').style.display = 'none';
+  if(safe('checklistSection')) safe('checklistSection').style.display = 'none';
   window.formSaved = false;
 };
 
@@ -1956,7 +1958,7 @@ window.confirmDelete = function(id, name) {
 window.closePinModal = function() {
   document.getElementById('pinModal').classList.remove('show');
   ['pin1','pin2','pin3','pin4'].forEach(id => document.getElementById(id).value = '');
-  window.deleteTargetId = null;
+  // deleteTargetId는 여기서 초기화하지 않음 (삭제 후 초기화)
 };
 
 window.checkPin = async function() {
@@ -1964,14 +1966,21 @@ window.checkPin = async function() {
   if(pin.length < 4) return;
 
   if(pin === window.PIN) {
+    const targetId = window.deleteTargetId;
+    if(!targetId) {
+      showToast('❌ 삭제할 사업장 정보가 없어요');
+      closePinModal();
+      return;
+    }
     closePinModal();
+    window.deleteTargetId = null;
+    showToast('⏳ 삭제 중...');
     try {
-      const targetId = window.deleteTargetId;
-      // 해당 사업장의 일별 기록도 모두 삭제
+      // 일별 기록 삭제
       const recSnap = await getDocs(query(collection(db, 'dailyRecords'), where('propId', '==', targetId)));
-      const delPromises = [];
-      recSnap.forEach(d => delPromises.push(deleteDoc(doc(db, 'dailyRecords', d.id))));
-      await Promise.all(delPromises);
+      for(const d of recSnap.docs) {
+        await deleteDoc(doc(db, 'dailyRecords', d.id));
+      }
       // 사업장 삭제
       await deleteDoc(doc(db, 'properties', targetId));
       showToast('🗑 사업장이 삭제됐어요');
@@ -1979,9 +1988,10 @@ window.checkPin = async function() {
       await loadProperties();
     } catch(e) {
       showToast('❌ 삭제 실패: ' + e.message);
+      console.error('삭제 에러:', e);
     }
   } else {
-    showToast('❌ PIN이 틀렸어요 (기본: 0000)');
+    showToast('❌ PIN이 틀렸어요');
     ['pin1','pin2','pin3','pin4'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('pin1').focus();
   }
@@ -2050,7 +2060,7 @@ window.manageState = {
 };
 
 // ── 관리탭 사업장 선택 드롭다운 채우기 ──
-async function fillManagePropertySelect() {
+window.fillManagePropertySelect = async function() {
   const sel = document.getElementById('managePropertySelect');
   const snap = await getDocs(collection(db, 'properties'));
   sel.innerHTML = '<option value="">-- 사업장을 선택해주세요 --</option>';
@@ -2063,7 +2073,7 @@ async function fillManagePropertySelect() {
       sel.appendChild(opt);
     }
   });
-}
+};
 
 window.onManagePropertyChange = async function() {
   const id = document.getElementById('managePropertySelect').value;
@@ -2379,14 +2389,14 @@ window.saveDayRecord = async function() {
 
 let includeInterior = false;
 
-function toggleInterior() {
+window.toggleInterior = function() {
   includeInterior = !includeInterior;
   const el = document.getElementById('interiorToggle');
   el.classList.toggle('on', includeInterior);
   loadStats();
-}
+};
 
-async function fillStatsPropertySelect() {
+window.fillStatsPropertySelect = async function() {
   const sel = document.getElementById('statsPropertySelect');
   if (!sel) return;
   const props = await fetchPropertiesOnly();
@@ -2395,7 +2405,7 @@ async function fillStatsPropertySelect() {
   active.forEach(p => {
     sel.innerHTML += `<option value="${p.id}">${p.name}</option>`;
   });
-}
+};
 
 function getPeriodRange(period) {
   const now = new Date();
@@ -2425,7 +2435,7 @@ async function fetchPropertiesOnly() {
   } catch(e) { return []; }
 }
 
-async function loadStats() {
+window.loadStats = async function() {
   const propId = document.getElementById('statsPropertySelect')?.value || 'all';
   const period = document.getElementById('statsPeriod')?.value || 'thisMonth';
   const { start, end } = getPeriodRange(period);
@@ -2433,7 +2443,7 @@ async function loadStats() {
   const props = await fetchPropertiesOnly();
   const activeProps = props.filter(p => p.status === 'active');
 
-  const { getDocs: _gd, collection: _col, query, where } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+  // 상단에서 이미 import된 getDocs, collection, query, where 사용
   let q;
   if (propId === 'all') {
     q = query(collection(db, 'dailyRecords'));
@@ -2475,7 +2485,7 @@ async function loadStats() {
   renderPlatformChart(records);
   renderExpenseChart(records, interiorTotal);
   renderPropertyCompare(activeProps, records, propId);
-}
+};
 
 function renderMonthlyChart(records) {
   const el = document.getElementById('monthlyChart');
@@ -2597,10 +2607,9 @@ function renderPropertyCompare(activeProps, records, selectedPropId) {
   el.innerHTML = html || '<div class="no-data-msg">\ub370\uc774\ud130\uac00 \uc5c6\uc5b4\uc694</div>';
 }
 
-async function downloadExcel() {
+window.downloadExcel = async function() {
   showToast('\u23f3 \uc5d1\uc140 \uc900\ube44 \uc911...');
   try {
-    const { getDocs, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
     const snap = await getDocs(collection(db, 'dailyRecords'));
     const props = await fetchPropertiesOnly();
     const propMap = {};
