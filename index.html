@@ -9,6 +9,7 @@
 <title>외도민 매니저</title>
 <link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
     --bg: #0a0a0a;
@@ -1028,10 +1029,6 @@
     <div class="app-logo"><span>외도민</span> 매니저</div>
     <div style="font-size:11px; color:var(--text3); font-weight:500;">HOST MANAGER</div>
   </div>
-  <div class="property-tabs" id="propertyTabs">
-    <button class="prop-tab active" onclick="selectProperty('all', this)">전체</button>
-    <!-- 사업장 탭은 JS로 동적 생성 -->
-  </div>
 </div>
 
 <!-- ══════════ 홈 화면 ══════════ -->
@@ -1511,7 +1508,7 @@ window.db = db;
 window.currentPropertyId = null;
 window.deleteTargetId = null;
 window.formSaved = false;
-window.PIN = '0000'; // 기본 PIN (나중에 설정 가능)
+window.PIN = '0113'; // PIN
 
 // 체크리스트 기본 항목
 const DEFAULT_CHECKLIST = [
@@ -1956,12 +1953,19 @@ window.checkPin = async function() {
   if(pin === window.PIN) {
     closePinModal();
     try {
-      await deleteDoc(doc(db, 'properties', window.deleteTargetId));
+      const targetId = window.deleteTargetId;
+      // 해당 사업장의 일별 기록도 모두 삭제
+      const recSnap = await getDocs(query(collection(db, 'dailyRecords'), where('propId', '==', targetId)));
+      const delPromises = [];
+      recSnap.forEach(d => delPromises.push(deleteDoc(doc(db, 'dailyRecords', d.id))));
+      await Promise.all(delPromises);
+      // 사업장 삭제
+      await deleteDoc(doc(db, 'properties', targetId));
       showToast('🗑 사업장이 삭제됐어요');
       cancelEdit();
       await loadProperties();
     } catch(e) {
-      showToast('❌ 삭제 실패');
+      showToast('❌ 삭제 실패: ' + e.message);
     }
   } else {
     showToast('❌ PIN이 틀렸어요 (기본: 0000)');
@@ -2372,7 +2376,7 @@ function toggleInterior() {
 async function fillStatsPropertySelect() {
   const sel = document.getElementById('statsPropertySelect');
   if (!sel) return;
-  const props = await loadProperties();
+  const props = await fetchPropertiesOnly();
   const active = props.filter(p => p.status === 'active');
   sel.innerHTML = '<option value="all">전체</option>';
   active.forEach(p => {
@@ -2399,15 +2403,24 @@ function getPeriodRange(period) {
   }
 }
 
+async function fetchPropertiesOnly() {
+  try {
+    const snap = await getDocs(collection(db, 'properties'));
+    const props = [];
+    snap.forEach(d => props.push({ id: d.id, ...d.data() }));
+    return props;
+  } catch(e) { return []; }
+}
+
 async function loadStats() {
   const propId = document.getElementById('statsPropertySelect')?.value || 'all';
   const period = document.getElementById('statsPeriod')?.value || 'thisMonth';
   const { start, end } = getPeriodRange(period);
 
-  const props = await loadProperties();
+  const props = await fetchPropertiesOnly();
   const activeProps = props.filter(p => p.status === 'active');
 
-  const { getDocs, collection, query, where } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+  const { getDocs: _gd, collection: _col, query, where } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
   let q;
   if (propId === 'all') {
     q = query(collection(db, 'dailyRecords'));
@@ -2576,7 +2589,7 @@ async function downloadExcel() {
   try {
     const { getDocs, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
     const snap = await getDocs(collection(db, 'dailyRecords'));
-    const props = await loadProperties();
+    const props = await fetchPropertiesOnly();
     const propMap = {};
     props.forEach(p => propMap[p.id] = p.name);
     const rows = [['\uc0ac\uc5c5\uc7a5','\ub0a0\uc9dc','\uad6d\uc801','\uba54\ubaa8','\uc218\uc775\ud50c\ub7ab\ud3fc','\uc218\uc775\uae08\uc561','\uc218\uc775\uc801\uc694','\ube44\uc6a9\ud56d\ubaa9','\ube44\uc6a9\uae08\uc561','\ube44\uc6a9\uc801\uc694']];
