@@ -960,6 +960,64 @@
   }
 
   .entry-delete:hover { color: var(--red); }
+
+  /* ── 통계 탭 ── */
+  .toggle-switch {
+    width: 44px; height: 24px;
+    background: var(--border2);
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle-switch.on { background: var(--green); }
+  .toggle-knob {
+    width: 18px; height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 3px; left: 3px;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .toggle-switch.on .toggle-knob { transform: translateX(20px); }
+
+  .donut-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .donut-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .donut-label { font-size: 13px; color: var(--text); flex: 1; }
+  .donut-pct { font-size: 13px; font-weight: 600; color: var(--text); }
+  .donut-bar-track { background: var(--bg2); border-radius: 4px; height: 6px; flex: 2; overflow: hidden; }
+  .donut-bar-fill { height: 100%; border-radius: 4px; }
+
+  .monthly-bars { overflow-x: auto; padding-bottom: 4px; }
+  .monthly-bars-inner { display: flex; gap: 6px; min-width: max-content; }
+  .month-col { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 44px; }
+  .month-bars-group { display: flex; align-items: flex-end; gap: 2px; height: 80px; }
+  .month-bar { width: 14px; border-radius: 3px 3px 0 0; min-height: 2px; }
+  .month-label { font-size: 10px; color: var(--text3); }
+
+  .chart-bar-wrap { margin-bottom: 10px; }
+  .chart-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  .chart-bar-track { background: var(--bg2); border-radius: 4px; height: 10px; overflow: hidden; margin-bottom: 3px; }
+  .chart-bar-fill { height: 100%; border-radius: 4px; }
+
+  .compare-row { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .compare-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .compare-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .compare-nums { display: flex; gap: 8px; margin-bottom: 6px; }
+  .compare-num { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 600; }
+  .compare-num.income { background: rgba(79,195,247,0.1); color: var(--blue); }
+  .compare-num.expense { background: rgba(239,83,80,0.1); color: var(--red); }
+  .compare-num.profit { background: rgba(129,199,132,0.1); color: var(--green); }
+
+  .no-data-msg { text-align: center; padding: 24px; color: var(--text3); font-size: 13px; }
+</style>
 </style>
 </head>
 <body>
@@ -1140,9 +1198,12 @@
 <div class="screen" id="screen-manage">
 
   <!-- 사업장 선택 -->
-  <div class="form-group">
-    <label class="form-label">사업장 선택</label>
-    <select class="form-input" id="managePropertySelect" onchange="onManagePropertyChange()">
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      사업장 선택
+    </div>
+    <select class="form-input" id="managePropertySelect" onchange="onManagePropertyChange()" style="padding:12px 14px; font-size:14px; font-weight:500">
       <option value="">-- 사업장을 선택해주세요 --</option>
     </select>
   </div>
@@ -1273,10 +1334,121 @@
 
 <!-- ══════════ 통계 화면 ══════════ -->
 <div class="screen" id="screen-stats">
-  <div class="empty-state" style="padding:60px 20px">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-    <p>통계 탭은 다음 단계에서 완성돼요 📊</p>
+
+  <!-- 조회 조건 -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      조회 조건
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px">
+      <div>
+        <label class="form-label">사업장</label>
+        <select class="form-input" id="statsPropertySelect" onchange="loadStats()" style="padding:10px 12px; font-size:13px">
+          <option value="all">전체</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">기간</label>
+        <select class="form-input" id="statsPeriod" onchange="loadStats()" style="padding:10px 12px; font-size:13px">
+          <option value="thisMonth">이번달</option>
+          <option value="lastMonth">지난달</option>
+          <option value="thisYear">올해</option>
+          <option value="lastYear">작년</option>
+          <option value="all">전체</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 인테리어 비용 토글 -->
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--bg2); border-radius:var(--radius2); border:1px solid var(--border)">
+      <div>
+        <div style="font-size:13px; font-weight:600; color:var(--text)">인테리어 비용 포함</div>
+        <div style="font-size:11px; color:var(--text3); margin-top:2px">수익 분석에 초기 투자비용 포함</div>
+      </div>
+      <div class="toggle-switch" id="interiorToggle" onclick="toggleInterior()" role="switch">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>
   </div>
+
+  <!-- 핵심 수치 -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      핵심 수치
+    </div>
+    <div class="stat-grid">
+      <div class="stat-item">
+        <div class="stat-label">총 수익</div>
+        <div class="stat-value income" id="stats-total-income">₩0</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">총 비용</div>
+        <div class="stat-value expense" id="stats-total-expense">₩0</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">순이익</div>
+        <div class="stat-value profit" id="stats-total-profit">₩0</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">수익 건수</div>
+        <div class="stat-value" id="stats-total-count">0건</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 월별 수익/비용 그래프 -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      월별 수익/비용
+    </div>
+    <div id="monthlyChart" style="padding:8px 0"></div>
+  </div>
+
+  <!-- 국적별 비율 -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
+      국적별 투숙 비율
+    </div>
+    <div id="nationalityChart"></div>
+  </div>
+
+  <!-- 플랫폼별 수익 -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+      플랫폼별 수익
+    </div>
+    <div id="platformChart"></div>
+  </div>
+
+  <!-- 비용 항목별 -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      비용 항목별 분석
+    </div>
+    <div id="expenseChart"></div>
+  </div>
+
+  <!-- 사업장별 비교 -->
+  <div class="card" id="propertyCompareCard">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+      사업장별 비교
+    </div>
+    <div id="propertyCompareChart"></div>
+  </div>
+
+  <!-- 엑셀 다운로드 -->
+  <button class="btn btn-secondary" onclick="downloadExcel()" style="margin-top:4px; display:flex; align-items:center; justify-content:center; gap:8px">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    📥 엑셀 다운로드
+  </button>
+
 </div>
 
 <!-- 하단 탭바 -->
@@ -1354,6 +1526,12 @@ window.switchTab = function(tab, btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('screen-' + tab).classList.add('active');
   btn.classList.add('active');
+  if (tab === 'stats') {
+    fillStatsPropertySelect().then(() => loadStats());
+  }
+  if (tab === 'manage') {
+    fillManagePropertySelect();
+  }
 };
 
 // ── 앱 초기화 ──
@@ -1371,8 +1549,10 @@ async function loadProperties() {
     renderHomeCards(props);
     renderRegisteredList(props);
     updateHomeSummary(props);
+    return props;
   } catch(e) {
     console.error(e);
+    return [];
   }
 }
 
@@ -2176,9 +2356,260 @@ window.saveDayRecord = async function() {
   }
 };
 
+// ══════════════════════════════
+// 통계 탭
+// ══════════════════════════════
+
+let includeInterior = false;
+
+function toggleInterior() {
+  includeInterior = !includeInterior;
+  const el = document.getElementById('interiorToggle');
+  el.classList.toggle('on', includeInterior);
+  loadStats();
+}
+
+async function fillStatsPropertySelect() {
+  const sel = document.getElementById('statsPropertySelect');
+  if (!sel) return;
+  const props = await loadProperties();
+  const active = props.filter(p => p.status === 'active');
+  sel.innerHTML = '<option value="all">전체</option>';
+  active.forEach(p => {
+    sel.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+  });
+}
+
+function getPeriodRange(period) {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  if (period === 'thisMonth') {
+    return { start: `${y}${String(m+1).padStart(2,'0')}01`, end: `${y}${String(m+1).padStart(2,'0')}31` };
+  } else if (period === 'lastMonth') {
+    const lm = m === 0 ? 12 : m;
+    const ly = m === 0 ? y-1 : y;
+    return { start: `${ly}${String(lm).padStart(2,'0')}01`, end: `${ly}${String(lm).padStart(2,'0')}31` };
+  } else if (period === 'thisYear') {
+    return { start: `${y}0101`, end: `${y}1231` };
+  } else if (period === 'lastYear') {
+    return { start: `${y-1}0101`, end: `${y-1}1231` };
+  } else {
+    return { start: '19000101', end: '29991231' };
+  }
+}
+
+async function loadStats() {
+  const propId = document.getElementById('statsPropertySelect')?.value || 'all';
+  const period = document.getElementById('statsPeriod')?.value || 'thisMonth';
+  const { start, end } = getPeriodRange(period);
+
+  const props = await loadProperties();
+  const activeProps = props.filter(p => p.status === 'active');
+
+  const { getDocs, collection, query, where } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+  let q;
+  if (propId === 'all') {
+    q = query(collection(db, 'dailyRecords'));
+  } else {
+    q = query(collection(db, 'dailyRecords'), where('propId', '==', propId));
+  }
+  const snap = await getDocs(q);
+  let records = [];
+  snap.forEach(d => {
+    const data = d.data();
+    if (data.date >= start && data.date <= end) records.push(data);
+  });
+
+  let interiorTotal = 0;
+  if (includeInterior) {
+    activeProps.forEach(p => {
+      if (propId === 'all' || p.id === propId) {
+        (p.interiorCosts || []).forEach(c => interiorTotal += (c.amount || 0));
+      }
+    });
+  }
+
+  let totalIncome = 0, totalExpense = 0, totalCount = 0;
+  records.forEach(r => {
+    (r.revenues || []).forEach(rv => { totalIncome += rv.amount || 0; totalCount++; });
+    (r.expenses || []).forEach(ex => { totalExpense += ex.amount || 0; });
+  });
+  totalExpense += interiorTotal;
+  const totalProfit = totalIncome - totalExpense;
+
+  document.getElementById('stats-total-income').textContent = '\u20a9' + totalIncome.toLocaleString();
+  document.getElementById('stats-total-expense').textContent = '\u20a9' + totalExpense.toLocaleString();
+  document.getElementById('stats-total-profit').textContent = '\u20a9' + totalProfit.toLocaleString();
+  document.getElementById('stats-total-profit').style.color = totalProfit >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('stats-total-count').textContent = totalCount + '\uac74';
+
+  renderMonthlyChart(records);
+  renderNationalityChart(records);
+  renderPlatformChart(records);
+  renderExpenseChart(records, interiorTotal);
+  renderPropertyCompare(activeProps, records, propId);
+}
+
+function renderMonthlyChart(records) {
+  const el = document.getElementById('monthlyChart');
+  if (!el) return;
+  const monthly = {};
+  records.forEach(r => {
+    const mon = r.date.substring(0, 6);
+    if (!monthly[mon]) monthly[mon] = { income: 0, expense: 0 };
+    (r.revenues || []).forEach(rv => monthly[mon].income += rv.amount || 0);
+    (r.expenses || []).forEach(ex => monthly[mon].expense += ex.amount || 0);
+  });
+  const keys = Object.keys(monthly).sort();
+  if (keys.length === 0) { el.innerHTML = '<div class="no-data-msg">\ub370\uc774\ud130\uac00 \uc5c6\uc5b4\uc694</div>'; return; }
+  const maxVal = Math.max(...keys.map(k => Math.max(monthly[k].income, monthly[k].expense)), 1);
+  let html = '<div style="display:flex;gap:12px;margin-bottom:10px">';
+  html += '<span style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:8px;height:8px;background:var(--blue);border-radius:2px"></span>\uc218\uc775</span>';
+  html += '<span style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:8px;height:8px;background:var(--red);border-radius:2px"></span>\ube44\uc6a9</span>';
+  html += '</div><div class="monthly-bars"><div class="monthly-bars-inner">';
+  keys.forEach(k => {
+    const d = monthly[k];
+    const ih = Math.round((d.income / maxVal) * 76);
+    const eh = Math.round((d.expense / maxVal) * 76);
+    const mon = k.substring(4, 6) + '\uc6d4';
+    html += `<div class="month-col"><div class="month-bars-group"><div class="month-bar" style="height:${ih}px;background:var(--blue)"></div><div class="month-bar" style="height:${eh}px;background:var(--red)"></div></div><div class="month-label">${mon}</div></div>`;
+  });
+  html += '</div></div>';
+  el.innerHTML = html;
+}
+
+function renderNationalityChart(records) {
+  const el = document.getElementById('nationalityChart');
+  if (!el) return;
+  const map = {};
+  let total = 0;
+  records.forEach(r => {
+    if (r.nationality) { map[r.nationality] = (map[r.nationality]||0) + 1; total++; }
+  });
+  if (total === 0) { el.innerHTML = '<div class="no-data-msg">\ub370\uc774\ud130\uac00 \uc5c6\uc5b4\uc694</div>'; return; }
+  const colors = ['#4fc3f7','#ef5350','#ffd54f','#81c784','#ce93d8'];
+  const sorted = Object.entries(map).sort((a,b) => b[1]-a[1]);
+  let html = '';
+  sorted.forEach(([k,v],i) => {
+    const pct = Math.round((v/total)*100);
+    const color = colors[i%colors.length];
+    html += `<div class="donut-row"><div class="donut-dot" style="background:${color}"></div><div class="donut-label">${k}</div><div class="donut-bar-track"><div class="donut-bar-fill" style="width:${pct}%;background:${color}"></div></div><div class="donut-pct">${pct}%</div></div>`;
+  });
+  el.innerHTML = html;
+}
+
+function renderPlatformChart(records) {
+  const el = document.getElementById('platformChart');
+  if (!el) return;
+  const map = {};
+  let total = 0;
+  records.forEach(r => {
+    (r.revenues||[]).forEach(rv => {
+      const p = rv.platform || '\uae30\ud0c0';
+      map[p] = (map[p]||0) + (rv.amount||0);
+      total += rv.amount||0;
+    });
+  });
+  if (total === 0) { el.innerHTML = '<div class="no-data-msg">\ub370\uc774\ud130\uac00 \uc5c6\uc5b4\uc694</div>'; return; }
+  const colors = ['#4fc3f7','#81c784','#ffd54f','#ef5350','#ce93d8','#80cbc4'];
+  const sorted = Object.entries(map).sort((a,b) => b[1]-a[1]);
+  let html = '';
+  sorted.forEach(([k,v],i) => {
+    const pct = Math.round((v/total)*100);
+    const color = colors[i%colors.length];
+    html += `<div class="chart-bar-wrap"><div class="chart-bar-label"><span>${k}</span><span style="color:var(--text)">\u20a9${v.toLocaleString()} (${pct}%)</span></div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`;
+  });
+  el.innerHTML = html;
+}
+
+function renderExpenseChart(records, interiorTotal) {
+  const el = document.getElementById('expenseChart');
+  if (!el) return;
+  const map = {};
+  if (interiorTotal > 0) map['\uc778\ud14c\ub9ac\uc5b4'] = interiorTotal;
+  records.forEach(r => {
+    (r.expenses||[]).forEach(ex => {
+      const t = ex.type || '\uae30\ud0c0';
+      map[t] = (map[t]||0) + (ex.amount||0);
+    });
+  });
+  const total = Object.values(map).reduce((a,b)=>a+b,0);
+  if (total === 0) { el.innerHTML = '<div class="no-data-msg">\ub370\uc774\ud130\uac00 \uc5c6\uc5b4\uc694</div>'; return; }
+  const colors = ['#ef5350','#ff7043','#ffa726','#ffca28','#d4e157','#26a69a'];
+  const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  let html = '';
+  sorted.forEach(([k,v],i) => {
+    const pct = Math.round((v/total)*100);
+    const color = colors[i%colors.length];
+    html += `<div class="chart-bar-wrap"><div class="chart-bar-label"><span>${k}</span><span style="color:var(--text)">\u20a9${v.toLocaleString()} (${pct}%)</span></div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`;
+  });
+  el.innerHTML = html;
+}
+
+function renderPropertyCompare(activeProps, records, selectedPropId) {
+  const el = document.getElementById('propertyCompareChart');
+  const card = document.getElementById('propertyCompareCard');
+  if (!el) return;
+  if (selectedPropId !== 'all' || activeProps.length < 2) {
+    if (card) card.style.display = 'none';
+    return;
+  }
+  if (card) card.style.display = 'block';
+  let html = '';
+  activeProps.forEach(p => {
+    const recs = records.filter(r => r.propId === p.id);
+    let inc = 0, exp = 0;
+    recs.forEach(r => {
+      (r.revenues||[]).forEach(rv => inc += rv.amount||0);
+      (r.expenses||[]).forEach(ex => exp += ex.amount||0);
+    });
+    if (includeInterior) { (p.interiorCosts||[]).forEach(c => exp += c.amount||0); }
+    const profit = inc - exp;
+    html += `<div class="compare-row"><div class="compare-name">${p.name}</div><div class="compare-nums"><span class="compare-num income">\uc218\uc775 \u20a9${inc.toLocaleString()}</span><span class="compare-num expense">\ube44\uc6a9 \u20a9${exp.toLocaleString()}</span><span class="compare-num profit">\uc21c\uc774\uc775 \u20a9${profit.toLocaleString()}</span></div></div>`;
+  });
+  el.innerHTML = html || '<div class="no-data-msg">\ub370\uc774\ud130\uac00 \uc5c6\uc5b4\uc694</div>';
+}
+
+async function downloadExcel() {
+  showToast('\u23f3 \uc5d1\uc140 \uc900\ube44 \uc911...');
+  try {
+    const { getDocs, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+    const snap = await getDocs(collection(db, 'dailyRecords'));
+    const props = await loadProperties();
+    const propMap = {};
+    props.forEach(p => propMap[p.id] = p.name);
+    const rows = [['\uc0ac\uc5c5\uc7a5','\ub0a0\uc9dc','\uad6d\uc801','\uba54\ubaa8','\uc218\uc775\ud50c\ub7ab\ud3fc','\uc218\uc775\uae08\uc561','\uc218\uc775\uc801\uc694','\ube44\uc6a9\ud56d\ubaa9','\ube44\uc6a9\uae08\uc561','\ube44\uc6a9\uc801\uc694']];
+    snap.forEach(d => {
+      const r = d.data();
+      const propName = propMap[r.propId] || r.propId;
+      const date = r.date ? `${r.date.substring(0,4)}-${r.date.substring(4,6)}-${r.date.substring(6,8)}` : '';
+      const maxLen = Math.max((r.revenues||[]).length,(r.expenses||[]).length,1);
+      for(let i=0;i<maxLen;i++){
+        const rv=(r.revenues||[])[i]; const ex=(r.expenses||[])[i];
+        rows.push([i===0?propName:'',i===0?date:'',i===0?(r.nationality||''):'',i===0?(r.note||''):'',rv?rv.platform:'',rv?rv.amount:'',rv?rv.memo:'',ex?ex.type:'',ex?ex.amount:'',ex?ex.memo:'']);
+      }
+    });
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    script.onload = () => {
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [12,12,8,16,12,10,14,12,10,14].map(w=>({wch:w}));
+      XLSX.utils.book_append_sheet(wb, ws, '\uc804\uccb4\ub370\uc774\ud130');
+      XLSX.writeFile(wb, `\uc678\ub3c4\ubbfc\ub9e4\ub2c8\uc800_${new Date().toISOString().substring(0,10)}.xlsx`);
+      showToast('\u2705 \uc5d1\uc140 \ub2e4\uc6b4\ub85c\ub4dc \uc644\ub8cc!');
+    };
+    document.head.appendChild(script);
+  } catch(e) {
+    showToast('\u274c \ub2e4\uc6b4\ub85c\ub4dc \uc2e4\ud328: ' + e.message);
+  }
+}
+
 // 앱 시작
 init();
 fillManagePropertySelect();
+fillStatsPropertySelect();
 </script>
 
 </body>
