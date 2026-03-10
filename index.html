@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>외도민 매니저</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #111111;
+    --card: #161616;
+    --card2: #1e1e1e;
+    --border: #2a2a2a;
+    --border2: #333333;
+    --text: #f0f0f0;
+    --text2: #999999;
+    --text3: #555555;
+    --silver: #c8c8c8;
+    --silver2: #e8e8e8;
+    --blue: #4fc3f7;
+    --blue2: #0288d1;
+    --green: #81c784;
+    --red: #ef5350;
+    --yellow: #ffd54f;
+    --metal: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 50%, #222222 100%);
+    --metal-border: linear-gradient(135deg, #444 0%, #222 50%, #3a3a3a 100%);
+    --accent: #c8c8c8;
+    --radius: 12px;
+    --radius2: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    max-width: 430px;
+    margin: 0 auto;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* ── 앱 헤더 ── */
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px 12px;
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .app-logo {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--silver2);
+  }
+
+  .app-logo span {
+    background: linear-gradient(135deg, #c8c8c8, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* ── 상단 사업장 탭 ── */
+  .property-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .property-tabs::-webkit-scrollbar { display: none; }
+
+  .prop-tab {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .prop-tab.active {
+    background: var(--silver);
+    border-color: var(--silver);
+    color: #000;
+    font-weight: 600;
+  }
+
+  .prop-tab:not(.active):hover {
+    border-color: var(--silver);
+    color: var(--silver);
+  }
+
+  /* ── 메인 컨텐츠 ── */
+  .screen { display: none; padding: 20px 16px 100px; }
+  .screen.active { display: block; }
+
+  /* ── 하단 탭바 ── */
+  .tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    background: rgba(14,14,14,0.97);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 200;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 12px 4px;
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+    font-family: 'Pretendard', sans-serif;
+  }
+
+  .tab-btn.active { color: var(--silver2); }
+  .tab-btn:not(.active):hover { color: var(--text2); }
+
+  .tab-btn svg { width: 22px; height: 22px; stroke-width: 1.5; }
+  .tab-btn span { font-size: 10px; font-weight: 500; letter-spacing: 0.3px; }
+
+  .tab-btn.active svg {
+    filter: drop-shadow(0 0 6px rgba(200,200,200,0.4));
+  }
+
+  /* ── 카드 ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(200,200,200,0.1), transparent);
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .card-title svg { width: 14px; height: 14px; opacity: 0.6; }
+
+  /* ── 수치 표시 ── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .stat-item { }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text3);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  .stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--silver2);
+    letter-spacing: -0.5px;
+  }
+
+  .stat-value.income { color: var(--blue); }
+  .stat-value.expense { color: var(--red); }
+  .stat-value.profit { color: var(--green); }
+  .stat-value.rate { color: var(--yellow); }
+
+  .stat-value.large {
+    font-size: 28px;
+    letter-spacing: -1px;
+  }
+
+  /* ── 사업장 카드 ── */
+  .property-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .property-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(200,200,200,0.15), transparent);
+  }
+
+  .property-card:hover {
+    border-color: var(--border2);
+    background: var(--card2);
+    transform: translateY(-1px);
+  }
+
+  .property-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .property-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--silver2);
+  }
+
+  .status-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  .status-active {
+    background: rgba(129,199,132,0.15);
+    color: var(--green);
+    border: 1px solid rgba(129,199,132,0.3);
+  }
+
+  .status-preparing {
+    background: rgba(255,213,79,0.15);
+    color: var(--yellow);
+    border: 1px solid rgba(255,213,79,0.3);
+  }
+
+  .property-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .property-stat-item {
+    text-align: center;
+    padding: 8px;
+    background: var(--bg2);
+    border-radius: var(--radius2);
+    border: 1px solid var(--border);
+  }
+
+  .property-stat-label {
+    font-size: 9px;
+    color: var(--text3);
+    margin-bottom: 3px;
+    font-weight: 500;
+  }
+
+  .property-stat-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--yellow);
+  }
+
+  .property-finance {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+
+  .finance-row {
+    background: var(--bg2);
+    border-radius: var(--radius2);
+    padding: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .finance-period {
+    font-size: 9px;
+    color: var(--text3);
+    margin-bottom: 6px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .finance-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+  }
+
+  .finance-key { font-size: 9px; color: var(--text3); }
+  .finance-val { font-size: 10px; font-weight: 600; }
+  .finance-val.inc { color: var(--blue); }
+  .finance-val.exp { color: var(--red); }
+
+  /* ── 입력 폼 ── */
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 6px;
+    display: block;
+    letter-spacing: 0.3px;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--card2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius2);
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'Pretendard', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .form-input:focus {
+    border-color: var(--silver);
+    background: var(--card);
+  }
+
+  .form-input::placeholder { color: var(--text3); }
+
+  .form-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .form-input-group .form-input { flex: 1; }
+  .form-unit {
+    font-size: 13px;
+    color: var(--text2);
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  textarea.form-input {
+    resize: none;
+    min-height: 80px;
+    line-height: 1.6;
+  }
+
+  select.form-input {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+
+  /* ── 버튼 ── */
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: var(--radius2);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'Pretendard', sans-serif;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #d0d0d0, #f0f0f0);
+    color: #000;
+  }
+
+  .btn-primary:hover { background: linear-gradient(135deg, #e0e0e0, #ffffff); }
+
+  .btn-primary:disabled {
+    background: var(--border2);
+    color: var(--text3);
+    cursor: not-allowed;
+  }
+
+  .btn-launch {
+    background: linear-gradient(135deg, #1a3a1a, #2d5a2d);
+    color: var(--green);
+    border: 1px solid rgba(129,199,132,0.3);
+  }
+
+  .btn-launch:hover:not(:disabled) {
+    background: linear-gradient(135deg, #2d5a2d, #3d6a3d);
+  }
+
+  .btn-launch:disabled {
+    background: var(--card2);
+    color: var(--text3);
+    border-color: var(--border);
+    cursor: not-allowed;
+  }
+
+  .btn-cancel-launch {
+    background: rgba(239,83,80,0.1);
+    color: var(--red);
+    border: 1px solid rgba(239,83,80,0.3);
+    margin-top: 8px;
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border2);
+  }
+
+  .btn-secondary:hover { border-color: var(--silver); color: var(--silver); }
+
+  .btn-sm {
+    width: auto;
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  .btn-icon {
+    background: var(--card2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius2);
+    color: var(--text2);
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-icon:hover { border-color: var(--red); color: var(--red); }
+
+  .btn-add {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px dashed var(--border2);
+    border-radius: var(--radius2);
+    color: var(--text3);
+    font-size: 13px;
+    font-family: 'Pretendard', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .btn-add:hover { border-color: var(--silver); color: var(--silver); }
+
+  /* ── 인테리어 비용 ── */
+  .interior-sum {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    margin-bottom: 12px;
+  }
+
+  .interior-sum-label {
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 500;
+  }
+
+  .interior-sum-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--silver2);
+  }
+
+  .interior-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+    animation: slideIn 0.2s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .interior-row .form-input { padding: 10px 12px; font-size: 13px; }
+
+  /* ── 체크리스트 ── */
+  .checklist-section {
+    margin-bottom: 16px;
+  }
+
+  .checklist-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text3);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .checklist-item:hover { border-color: var(--border2); }
+
+  .checklist-item.checked {
+    opacity: 0.6;
+    border-color: rgba(129,199,132,0.2);
+    background: rgba(129,199,132,0.05);
+  }
+
+  .check-box {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .checklist-item.checked .check-box {
+    background: var(--green);
+    border-color: var(--green);
+  }
+
+  .check-box svg { width: 10px; height: 10px; opacity: 0; }
+  .checklist-item.checked .check-box svg { opacity: 1; }
+
+  .check-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .checklist-item.checked .check-label {
+    text-decoration: line-through;
+    color: var(--text3);
+  }
+
+  /* ── 진척률 바 ── */
+  .progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), #a5d6a7);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .progress-text {
+    font-size: 11px;
+    color: var(--text3);
+    text-align: right;
+    margin-bottom: 16px;
+  }
+
+  /* ── 섹션 타이틀 ── */
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--silver);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── 등록된 사업장 목록 ── */
+  .registered-list {
+    margin-bottom: 20px;
+  }
+
+  .registered-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .registered-item:hover { border-color: var(--border2); background: var(--card2); }
+
+  .registered-item-name { font-size: 14px; font-weight: 600; color: var(--silver2); }
+  .registered-item-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* ── 토스트 ── */
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--card2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 9999;
+    white-space: nowrap;
+    max-width: 90%;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── PIN 모달 ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .modal-overlay.show {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border2);
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px 40px;
+    width: 100%;
+    max-width: 430px;
+    transform: translateY(100%);
+    transition: transform 0.3s;
+  }
+
+  .modal-overlay.show .modal { transform: translateY(0); }
+
+  .modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--silver2);
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  .modal-sub {
+    font-size: 12px;
+    color: var(--text3);
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .pin-input {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .pin-digit {
+    width: 50px;
+    height: 56px;
+    background: var(--card2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius2);
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--silver2);
+    font-family: 'Pretendard', sans-serif;
+    outline: none;
+  }
+
+  .pin-digit:focus { border-color: var(--silver); }
+
+  /* ── 로딩 ── */
+  .loading-dots {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .loading-dots span {
+    width: 6px; height: 6px;
+    background: var(--text3);
+    border-radius: 50%;
+    animation: dot 1.2s infinite;
+  }
+
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes dot {
+    0%, 60%, 100% { transform: scale(0.6); opacity: 0.4; }
+    30% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ── 빈 상태 ── */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text3);
+  }
+
+  .empty-state svg { width: 48px; height: 48px; opacity: 0.3; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* ── 구분선 ── */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 16px 0;
+  }
+
+  /* ── 금액 요약 ── */
+  .amount-summary {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    padding: 12px 14px;
+    margin-top: 12px;
+  }
+
+  .amount-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+
+  .amount-row:last-child { margin-bottom: 0; }
+  .amount-row .label { color: var(--text2); }
+  .amount-row .value { font-weight: 600; }
+  .amount-row.total { border-top: 1px solid var(--border); padding-top: 8px; margin-top: 6px; }
+  .amount-row.total .value { font-size: 16px; color: var(--green); }
+
+  /* ── 입력 항목 행 (수익/비용) ── */
+  .entry-row {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    padding: 12px;
+    margin-bottom: 8px;
+    position: relative;
+    animation: slideIn 0.2s ease;
+  }
+
+  .entry-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .entry-row-num {
+    font-size: 11px;
+    color: var(--text3);
+    font-weight: 600;
+  }
+
+  .entry-delete {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    padding: 2px;
+    transition: color 0.2s;
+    font-size: 16px;
+  }
+
+  .entry-delete:hover { color: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- 앱 헤더 -->
+<div class="app-header">
+  <div class="header-top">
+    <div class="app-logo"><span>외도민</span> 매니저</div>
+    <div style="font-size:11px; color:var(--text3); font-weight:500;">HOST MANAGER</div>
+  </div>
+  <div class="property-tabs" id="propertyTabs">
+    <button class="prop-tab active" onclick="selectProperty('all', this)">전체</button>
+    <!-- 사업장 탭은 JS로 동적 생성 -->
+  </div>
+</div>
+
+<!-- ══════════ 홈 화면 ══════════ -->
+<div class="screen active" id="screen-home">
+
+  <!-- 전체 요약 카드 -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      이번달 전체 현황
+    </div>
+    <div class="stat-grid">
+      <div class="stat-item">
+        <div class="stat-label">총 수익</div>
+        <div class="stat-value income" id="home-total-income">₩0</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">총 비용</div>
+        <div class="stat-value expense" id="home-total-expense">₩0</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">순이익</div>
+        <div class="stat-value profit" id="home-total-profit">₩0</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">운영 사업장</div>
+        <div class="stat-value" id="home-property-count">0곳</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 사업장 카드 목록 -->
+  <div class="section-title">사업장 현황</div>
+  <div id="propertyCardList">
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <p>등록된 사업장이 없어요<br><span style="font-size:12px">등록 탭에서 사업장을 추가해주세요</span></p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════ 등록 화면 ══════════ -->
+<div class="screen" id="screen-register">
+
+  <!-- 등록된 사업장 목록 -->
+  <div class="section-title">등록된 사업장</div>
+  <div id="registeredList">
+    <div class="empty-state" style="padding:20px">
+      <p style="font-size:13px; color:var(--text3)">아직 등록된 사업장이 없어요</p>
+    </div>
+  </div>
+
+  <!-- 신규 등록 폼 -->
+  <div class="section-title" id="registerFormTitle">신규 사업장 등록</div>
+  <div class="card" id="registerForm">
+
+    <input type="hidden" id="editPropertyId" value="">
+
+    <!-- 기본 정보 -->
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      기본 정보
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">사업장명 *</label>
+      <input type="text" class="form-input" id="propName" placeholder="예: 강남 101호" oninput="checkFormSaved()">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">주소 *</label>
+      <input type="text" class="form-input" id="propAddress" placeholder="예: 서울시 강남구 ..." oninput="checkFormSaved()">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">보증금</label>
+      <div class="form-input-group">
+        <input type="number" class="form-input" id="propDeposit" placeholder="0" oninput="checkFormSaved()">
+        <span class="form-unit">만원</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">월세</label>
+      <div class="form-input-group">
+        <input type="number" class="form-input" id="propRent" placeholder="0" oninput="checkFormSaved()">
+        <span class="form-unit">만원</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">iCal URL <span style="color:var(--text3);font-weight:400">(에어비앤비 예약 달력 링크)</span></label>
+      <div class="form-input-group">
+        <input type="url" class="form-input" id="propIcal" placeholder="https://www.airbnb.com/calendar/ical/..." oninput="checkFormSaved()">
+        <button class="btn-icon" onclick="syncIcal()" title="iCal 동기화">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">메모 <span style="color:var(--text3);font-weight:400">(최대 200자)</span></label>
+      <textarea class="form-input" id="propMemo" placeholder="특이사항, 계약 조건 등..." maxlength="200" oninput="checkFormSaved(); updateMemoCount(this)"></textarea>
+      <div style="text-align:right; font-size:11px; color:var(--text3); margin-top:4px"><span id="memoCount">0</span>/200</div>
+    </div>
+
+    <button class="btn btn-primary" id="savePropertyBtn" onclick="saveProperty()">
+      💾 사업장 저장
+    </button>
+
+    <div id="editCancelBtn" style="display:none; margin-top:8px">
+      <button class="btn btn-secondary" onclick="cancelEdit()">취소</button>
+    </div>
+  </div>
+
+  <!-- 인테리어 비용 (저장 후 표시) -->
+  <div id="interiorSection" style="display:none">
+    <div class="section-title">인테리어 비용</div>
+    <div class="card">
+      <div class="interior-sum">
+        <span class="interior-sum-label">💰 총 합계</span>
+        <span class="interior-sum-value" id="interiorTotal">₩0</span>
+      </div>
+      <div id="interiorList"></div>
+      <button class="btn-add" onclick="addInteriorRow()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        항목 추가
+      </button>
+      <div style="margin-top:12px">
+        <button class="btn btn-primary btn-sm" onclick="saveInteriorCosts()">인테리어 비용 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 체크리스트 (저장 후 표시) -->
+  <div id="checklistSection" style="display:none">
+    <div class="section-title">런칭 준비 체크리스트</div>
+    <div class="card">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="progress-text" id="progressText">0 / 0 완료</div>
+
+      <div id="checklistContainer"></div>
+
+      <div class="divider"></div>
+
+      <!-- 런칭 버튼 -->
+      <div id="launchSection">
+        <button class="btn btn-launch" id="launchBtn" onclick="launchProperty()" disabled>
+          🚀 사업장 런칭
+        </button>
+        <div id="cancelLaunchDiv" style="display:none">
+          <button class="btn btn-cancel-launch" onclick="cancelLaunch()">↩ 런칭 취소</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════ 관리 화면 ══════════ -->
+<div class="screen" id="screen-manage">
+  <div class="empty-state" style="padding:60px 20px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <p>관리 탭은 다음 단계에서 완성돼요 🔨</p>
+  </div>
+</div>
+
+<!-- ══════════ 통계 화면 ══════════ -->
+<div class="screen" id="screen-stats">
+  <div class="empty-state" style="padding:60px 20px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <p>통계 탭은 다음 단계에서 완성돼요 📊</p>
+  </div>
+</div>
+
+<!-- 하단 탭바 -->
+<nav class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('home', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>홈</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('register', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+    <span>등록</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('manage', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+    <span>관리</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('stats', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <span>통계</span>
+  </button>
+</nav>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+<!-- PIN 모달 -->
+<div class="modal-overlay" id="pinModal">
+  <div class="modal">
+    <div class="modal-title">🔒 삭제 확인</div>
+    <div class="modal-sub" id="pinModalSub">사업장을 삭제하려면 PIN을 입력해주세요<br>모든 데이터가 삭제됩니다</div>
+    <div class="pin-input">
+      <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="pin1" oninput="movePinFocus(this, 'pin2')">
+      <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="pin2" oninput="movePinFocus(this, 'pin3')" onkeydown="pinBack(this, 'pin1')">
+      <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="pin3" oninput="movePinFocus(this, 'pin4')" onkeydown="pinBack(this, 'pin2')">
+      <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="pin4" oninput="checkPin()" onkeydown="pinBack(this, 'pin3')">
+    </div>
+    <button class="btn btn-secondary" onclick="closePinModal()">취소</button>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCkaqQ9voBDPwwAwlzGkR3uDs8BuUAuK38",
+  authDomain: "house-manager-e4047.firebaseapp.com",
+  projectId: "house-manager-e4047",
+  storageBucket: "house-manager-e4047.firebasestorage.app",
+  messagingSenderId: "600040805315",
+  appId: "1:600040805315:web:3f20b7d3e5d0c94585a376"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ── 전역 상태 ──
+window.db = db;
+window.currentPropertyId = null;
+window.deleteTargetId = null;
+window.formSaved = false;
+window.PIN = '0000'; // 기본 PIN (나중에 설정 가능)
+
+// 체크리스트 기본 항목
+const DEFAULT_CHECKLIST = [
+  { section: '📌 법적 절차', items: ['숙박업 신고 접수', '영업신고증 발급', '에어비앤비 영업신고증 제출', '사업자등록증 발급'] },
+  { section: '📌 안전시설', items: ['화재감지기 설치', '소화기 비치', '비상구/유도등 설치', '피난 안내도 부착', '소방시설 점검 완료'] },
+  { section: '📌 운영 준비', items: ['침구/수건 비품 준비', 'WiFi 설치', '에어비앤비 리스팅 작성', '첫 가격 설정', '청소 담당자 확정'] }
+];
+
+// ── 탭 전환 ──
+window.switchTab = function(tab, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  btn.classList.add('active');
+};
+
+// ── 앱 초기화 ──
+async function init() {
+  await loadProperties();
+}
+
+// ── 사업장 불러오기 ──
+async function loadProperties() {
+  try {
+    const snap = await getDocs(collection(db, 'properties'));
+    const props = [];
+    snap.forEach(d => props.push({ id: d.id, ...d.data() }));
+    renderPropertyTabs(props);
+    renderHomeCards(props);
+    renderRegisteredList(props);
+    updateHomeSummary(props);
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+// ── 상단 탭 렌더링 ──
+function renderPropertyTabs(props) {
+  const container = document.getElementById('propertyTabs');
+  const active = props.filter(p => p.status === 'active');
+
+  // 기존 탭 제거 (전체 빼고)
+  const existing = container.querySelectorAll('.prop-tab:not([data-all])');
+  existing.forEach(e => e.remove());
+
+  // 더보기 버튼 제거
+  const moreBtn = container.querySelector('.more-btn');
+  if(moreBtn) moreBtn.remove();
+
+  const showProps = active.slice(0, 3);
+  const moreProps = active.slice(3);
+
+  showProps.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'prop-tab';
+    btn.textContent = p.name;
+    btn.dataset.id = p.id;
+    btn.onclick = () => selectProperty(p.id, btn);
+    container.appendChild(btn);
+  });
+
+  if(moreProps.length > 0) {
+    const moreBtn = document.createElement('button');
+    moreBtn.className = 'prop-tab more-btn';
+    moreBtn.textContent = `+${moreProps.length} 더보기`;
+    moreBtn.onclick = () => showMoreProperties(moreProps);
+    container.appendChild(moreBtn);
+  }
+}
+
+// ── 홈 요약 업데이트 ──
+function updateHomeSummary(props) {
+  const active = props.filter(p => p.status === 'active');
+  document.getElementById('home-property-count').textContent = active.length + '곳';
+  // 수익/비용은 dailyRecords 로드 후 계산 (추후 구현)
+}
+
+// ── 홈 카드 렌더링 ──
+function renderHomeCards(props) {
+  const container = document.getElementById('propertyCardList');
+  const active = props.filter(p => p.status === 'active');
+
+  if(active.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <p>운영 중인 사업장이 없어요<br><span style="font-size:12px">등록 탭에서 사업장을 런칭해주세요</span></p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = active.map(p => `
+    <div class="property-card" onclick="showPropertyDetail('${p.id}')">
+      <div class="property-card-header">
+        <div class="property-name">${p.name}</div>
+        <div class="status-badge status-active">운영중</div>
+      </div>
+      <div class="property-stats">
+        <div class="property-stat-item">
+          <div class="property-stat-label">이번달 숙박률</div>
+          <div class="property-stat-value">--%</div>
+        </div>
+        <div class="property-stat-item">
+          <div class="property-stat-label">연간 숙박률</div>
+          <div class="property-stat-value">--%</div>
+        </div>
+        <div class="property-stat-item">
+          <div class="property-stat-label">누적 숙박률</div>
+          <div class="property-stat-value">--%</div>
+        </div>
+      </div>
+      <div class="property-finance">
+        <div class="finance-row">
+          <div class="finance-period">이번달</div>
+          <div class="finance-item"><span class="finance-key">수익</span><span class="finance-val inc">₩0</span></div>
+          <div class="finance-item"><span class="finance-key">비용</span><span class="finance-val exp">₩0</span></div>
+        </div>
+        <div class="finance-row">
+          <div class="finance-period">연간</div>
+          <div class="finance-item"><span class="finance-key">수익</span><span class="finance-val inc">₩0</span></div>
+          <div class="finance-item"><span class="finance-key">비용</span><span class="finance-val exp">₩0</span></div>
+        </div>
+        <div class="finance-row">
+          <div class="finance-period">누적</div>
+          <div class="finance-item"><span class="finance-key">수익</span><span class="finance-val inc">₩0</span></div>
+          <div class="finance-item"><span class="finance-key">비용</span><span class="finance-val exp">₩0</span></div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── 등록 목록 렌더링 ──
+function renderRegisteredList(props) {
+  const container = document.getElementById('registeredList');
+  if(props.length === 0) {
+    container.innerHTML = `<div class="empty-state" style="padding:20px"><p style="font-size:13px; color:var(--text3)">아직 등록된 사업장이 없어요</p></div>`;
+    return;
+  }
+
+  container.innerHTML = props.map(p => `
+    <div class="registered-item" onclick="loadPropertyForEdit('${p.id}')">
+      <div>
+        <div class="registered-item-name">${p.name}</div>
+        <div class="registered-item-sub">${p.address || '주소 없음'} · 보증금 ${p.deposit || 0}만원 / 월세 ${p.rent || 0}만원</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center">
+        <div class="status-badge ${p.status === 'active' ? 'status-active' : 'status-preparing'}">${p.status === 'active' ? '운영중' : '준비중'}</div>
+        <button class="btn-icon" onclick="event.stopPropagation(); confirmDelete('${p.id}', '${p.name}')" style="padding:6px 8px; font-size:13px">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── 사업장 저장 ──
+window.saveProperty = async function() {
+  const name = document.getElementById('propName').value.trim();
+  const address = document.getElementById('propAddress').value.trim();
+  if(!name) { showToast('⚠️ 사업장명을 입력해주세요'); return; }
+
+  const editId = document.getElementById('editPropertyId').value;
+  const id = editId || 'prop_' + Date.now();
+
+  const data = {
+    name,
+    address,
+    deposit: parseInt(document.getElementById('propDeposit').value) || 0,
+    rent: parseInt(document.getElementById('propRent').value) || 0,
+    icalUrl: document.getElementById('propIcal').value.trim(),
+    memo: document.getElementById('propMemo').value.trim(),
+    status: editId ? undefined : 'preparing',
+    createdAt: editId ? undefined : new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  // undefined 키 제거
+  Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
+
+  try {
+    if(editId) {
+      await updateDoc(doc(db, 'properties', editId), data);
+      showToast('✅ 사업장 정보가 수정됐어요');
+    } else {
+      // 체크리스트 초기화
+      const checklist = [];
+      DEFAULT_CHECKLIST.forEach(sec => {
+        sec.items.forEach(item => checklist.push({ title: item, done: false, section: sec.section }));
+      });
+      await setDoc(doc(db, 'properties', id), { ...data, checklist, interiorCosts: [] });
+      showToast('✅ 사업장이 등록됐어요');
+    }
+
+    window.formSaved = true;
+    document.getElementById('editPropertyId').value = editId || id;
+    await loadProperties();
+    showPostSaveUI(editId || id);
+  } catch(e) {
+    showToast('❌ 저장 실패: ' + e.message);
+  }
+};
+
+// ── 저장 후 UI 표시 ──
+async function showPostSaveUI(id) {
+  document.getElementById('interiorSection').style.display = 'block';
+  document.getElementById('checklistSection').style.display = 'block';
+  document.getElementById('editCancelBtn').style.display = 'none';
+
+  // 데이터 불러와서 렌더링
+  const snap = await getDoc(doc(db, 'properties', id));
+  if(!snap.exists()) return;
+  const prop = snap.data();
+
+  renderInteriorCosts(prop.interiorCosts || [], id);
+  renderChecklist(prop.checklist || [], id, prop.status);
+}
+
+// ── 사업장 불러와서 수정 ──
+window.loadPropertyForEdit = async function(id) {
+  const snap = await getDoc(doc(db, 'properties', id));
+  if(!snap.exists()) return;
+  const p = snap.data();
+
+  document.getElementById('editPropertyId').value = id;
+  document.getElementById('propName').value = p.name || '';
+  document.getElementById('propAddress').value = p.address || '';
+  document.getElementById('propDeposit').value = p.deposit || '';
+  document.getElementById('propRent').value = p.rent || '';
+  document.getElementById('propIcal').value = p.icalUrl || '';
+  document.getElementById('propMemo').value = p.memo || '';
+  document.getElementById('memoCount').textContent = (p.memo || '').length;
+
+  document.getElementById('registerFormTitle').textContent = '사업장 수정';
+  document.getElementById('editCancelBtn').style.display = 'block';
+  document.getElementById('savePropertyBtn').textContent = '💾 수정 저장';
+
+  window.formSaved = true;
+  showPostSaveUI(id);
+
+  // 폼으로 스크롤
+  document.getElementById('registerForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+window.cancelEdit = function() {
+  document.getElementById('editPropertyId').value = '';
+  document.getElementById('propName').value = '';
+  document.getElementById('propAddress').value = '';
+  document.getElementById('propDeposit').value = '';
+  document.getElementById('propRent').value = '';
+  document.getElementById('propIcal').value = '';
+  document.getElementById('propMemo').value = '';
+  document.getElementById('memoCount').textContent = '0';
+  document.getElementById('registerFormTitle').textContent = '신규 사업장 등록';
+  document.getElementById('savePropertyBtn').textContent = '💾 사업장 저장';
+  document.getElementById('editCancelBtn').style.display = 'none';
+  document.getElementById('interiorSection').style.display = 'none';
+  document.getElementById('checklistSection').style.display = 'none';
+  window.formSaved = false;
+};
+
+// ── 인테리어 비용 렌더링 ──
+function renderInteriorCosts(costs, propId) {
+  window.currentPropertyId = propId;
+  const list = document.getElementById('interiorList');
+  list.innerHTML = '';
+
+  costs.forEach((c, i) => {
+    list.appendChild(createInteriorRow(c.name, c.amount, i));
+  });
+
+  updateInteriorTotal();
+}
+
+window.addInteriorRow = function() {
+  const list = document.getElementById('interiorList');
+  const idx = list.children.length;
+  list.appendChild(createInteriorRow('', '', idx));
+  updateInteriorTotal();
+};
+
+function createInteriorRow(name, amount, idx) {
+  const div = document.createElement('div');
+  div.className = 'interior-row';
+  div.innerHTML = `
+    <input type="text" class="form-input" placeholder="명목 (예: 바닥공사)" value="${name}" style="flex:1.5" oninput="updateInteriorTotal()">
+    <input type="number" class="form-input" placeholder="금액" value="${amount}" style="flex:1" oninput="updateInteriorTotal()">
+    <span class="form-unit" style="font-size:12px">원</span>
+    <button class="btn-icon" onclick="this.closest('.interior-row').remove(); updateInteriorTotal()">🗑</button>
+  `;
+  return div;
+}
+
+window.updateInteriorTotal = function() {
+  let total = 0;
+  document.querySelectorAll('.interior-row').forEach(row => {
+    const amt = parseInt(row.querySelectorAll('input')[1].value) || 0;
+    total += amt;
+  });
+  document.getElementById('interiorTotal').textContent = '₩' + total.toLocaleString();
+};
+
+window.saveInteriorCosts = async function() {
+  const id = document.getElementById('editPropertyId').value || window.currentPropertyId;
+  if(!id) { showToast('⚠️ 먼저 사업장을 저장해주세요'); return; }
+
+  const costs = [];
+  document.querySelectorAll('.interior-row').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const name = inputs[0].value.trim();
+    const amount = parseInt(inputs[1].value) || 0;
+    if(name) costs.push({ name, amount });
+  });
+
+  try {
+    await updateDoc(doc(db, 'properties', id), { interiorCosts: costs });
+    showToast('✅ 인테리어 비용이 저장됐어요');
+  } catch(e) {
+    showToast('❌ 저장 실패');
+  }
+};
+
+// ── 체크리스트 렌더링 ──
+function renderChecklist(checklist, propId, status) {
+  const container = document.getElementById('checklistContainer');
+  container.innerHTML = '';
+
+  const sections = {};
+  checklist.forEach((item, i) => {
+    if(!sections[item.section]) sections[item.section] = [];
+    sections[item.section].push({ ...item, idx: i });
+  });
+
+  Object.entries(sections).forEach(([sec, items]) => {
+    const secDiv = document.createElement('div');
+    secDiv.className = 'checklist-section';
+    secDiv.innerHTML = `<div class="checklist-section-title">${sec}</div>`;
+    items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'checklist-item' + (item.done ? ' checked' : '');
+      div.innerHTML = `
+        <div class="check-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <span class="check-label">${item.title}</span>
+      `;
+      div.onclick = () => toggleChecklist(propId, item.idx, !item.done, checklist);
+      secDiv.appendChild(div);
+    });
+    container.appendChild(secDiv);
+  });
+
+  updateProgress(checklist);
+  updateLaunchBtn(status, checklist);
+}
+
+async function toggleChecklist(propId, idx, newVal, checklist) {
+  checklist[idx].done = newVal;
+  try {
+    await updateDoc(doc(db, 'properties', propId), { checklist });
+    renderChecklist(checklist, propId, null);
+    checkFormSavedForLaunch(checklist);
+  } catch(e) {}
+}
+
+function updateProgress(checklist) {
+  const total = checklist.length;
+  const done = checklist.filter(c => c.done).length;
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${done} / ${total} 완료 (${pct}%)`;
+}
+
+function updateLaunchBtn(status, checklist) {
+  const btn = document.getElementById('launchBtn');
+  const cancelDiv = document.getElementById('cancelLaunchDiv');
+
+  if(status === 'active') {
+    btn.style.display = 'none';
+    cancelDiv.style.display = 'block';
+    return;
+  }
+
+  btn.style.display = 'block';
+  cancelDiv.style.display = 'none';
+  btn.disabled = !window.formSaved;
+}
+
+// ── 런칭 ──
+window.launchProperty = async function() {
+  const id = document.getElementById('editPropertyId').value;
+  if(!id) return;
+  if(!window.formSaved) { showToast('⚠️ 먼저 사업장을 저장해주세요'); return; }
+
+  try {
+    await updateDoc(doc(db, 'properties', id), { status: 'active', launchedAt: new Date().toISOString() });
+    showToast('🚀 사업장이 런칭됐어요!');
+    await loadProperties();
+    showPostSaveUI(id);
+  } catch(e) {
+    showToast('❌ 런칭 실패');
+  }
+};
+
+window.cancelLaunch = async function() {
+  const id = document.getElementById('editPropertyId').value;
+  if(!id) return;
+  if(!confirm('런칭을 취소하면 운영중 상태에서 준비중으로 변경돼요. 계속할까요?')) return;
+
+  try {
+    await updateDoc(doc(db, 'properties', id), { status: 'preparing' });
+    showToast('↩ 런칭이 취소됐어요');
+    await loadProperties();
+    showPostSaveUI(id);
+  } catch(e) {}
+};
+
+// ── 사업장 삭제 ──
+window.confirmDelete = function(id, name) {
+  window.deleteTargetId = id;
+  document.getElementById('pinModalSub').textContent = `"${name}" 사업장과 모든 데이터가 삭제됩니다`;
+  document.getElementById('pinModal').classList.add('show');
+  document.getElementById('pin1').focus();
+};
+
+window.closePinModal = function() {
+  document.getElementById('pinModal').classList.remove('show');
+  ['pin1','pin2','pin3','pin4'].forEach(id => document.getElementById(id).value = '');
+  window.deleteTargetId = null;
+};
+
+window.checkPin = async function() {
+  const pin = ['pin1','pin2','pin3','pin4'].map(id => document.getElementById(id).value).join('');
+  if(pin.length < 4) return;
+
+  if(pin === window.PIN) {
+    closePinModal();
+    try {
+      await deleteDoc(doc(db, 'properties', window.deleteTargetId));
+      showToast('🗑 사업장이 삭제됐어요');
+      cancelEdit();
+      await loadProperties();
+    } catch(e) {
+      showToast('❌ 삭제 실패');
+    }
+  } else {
+    showToast('❌ PIN이 틀렸어요 (기본: 0000)');
+    ['pin1','pin2','pin3','pin4'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('pin1').focus();
+  }
+};
+
+// ── 유틸 ──
+window.selectProperty = function(id, btn) {
+  document.querySelectorAll('.prop-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  window.selectedPropertyId = id;
+};
+
+window.showPropertyDetail = function(id) {
+  showToast('상세 화면은 다음 단계에서 추가돼요');
+};
+
+window.showMoreProperties = function(props) {
+  showToast(`+${props.length}개 사업장: ` + props.map(p => p.name).join(', '));
+};
+
+window.checkFormSaved = function() {
+  window.formSaved = false;
+  const launchBtn = document.getElementById('launchBtn');
+  if(launchBtn) launchBtn.disabled = true;
+};
+
+window.checkFormSavedForLaunch = function(checklist) {
+  const launchBtn = document.getElementById('launchBtn');
+  if(launchBtn) launchBtn.disabled = !window.formSaved;
+};
+
+window.updateMemoCount = function(el) {
+  document.getElementById('memoCount').textContent = el.value.length;
+};
+
+window.syncIcal = function() {
+  showToast('🔄 iCal 동기화는 런칭 후 사용 가능해요');
+};
+
+window.movePinFocus = function(el, nextId) {
+  if(el.value.length === 1) document.getElementById(nextId)?.focus();
+};
+
+window.pinBack = function(el, prevId) {
+  if(event.key === 'Backspace' && !el.value) document.getElementById(prevId)?.focus();
+};
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+window.showToast = showToast;
+
+// 앱 시작
+init();
+</script>
+
+</body>
+</html>
